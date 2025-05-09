@@ -1,0 +1,129 @@
+import pandas as pd
+
+air_quality = pd.read_csv('airquality_data.csv', encoding='cp1252')
+
+air_quality.head()
+
+categorical_columns = ['sampling_date', 'state', 'location', 'agency', 'type', 'location_monitoring_station']
+
+air_quality = air_quality.dropna(subset=['pm2_5'])
+
+subSet1 = air_quality[['state', 'type']]
+
+subSet2 = air_quality[['state','location']]
+
+concat = pd.concat([subSet1, subSet2], axis=1)
+
+concat.head()
+
+from sklearn.model_selection import train_test_split
+
+# Drop rows where target is missing
+air_quality = air_quality.dropna(subset=['pm2_5'])
+# Define input and output
+X = air_quality[['stn_code', 'state', 'location', 'agency', 'type', 'so2', 'no2', 'rspm', 'spm', 'location_monitoring_station']]
+y = air_quality['pm2_5']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+def remove_outliers(column):
+ Q1 = column.quantile(0.25)
+ Q3 = column.quantile(0.75)
+ IQR = Q3 - Q1
+ threshold = 1.5 * IQR
+ outlier_mask = (column < Q1 - threshold) | (column > Q3 + threshold)
+ return column[~outlier_mask]
+
+col_name = ['so2', 'no2', 'rspm', 'spm']
+for col in col_name:
+    air_quality[col] = pd.to_numeric(air_quality[col], errors='coerce') 
+for col in col_name:
+    air_quality[col] = remove_outliers(air_quality[col])
+
+# Remove outliers for each column using a loop
+col_name = ['so2', 'no2', 'rspm', 'spm']
+for col in col_name:
+ air_quality[col] = remove_outliers(air_quality[col])
+
+from sklearn.preprocessing import LabelEncoder
+
+# List of categorical columns
+col_label = ['state', 'location', 'type']
+
+# Initialize LabelEncoder
+encoder = LabelEncoder()
+
+# Loop over selected categorical columns
+for col in col_label:
+    # Convert NaN to string 'Missing' (or another placeholder)
+    air_quality[col] = air_quality[col].fillna('Missing')
+    # Fit and transform the column
+    air_quality[col] = encoder.fit_transform(air_quality[col])
+
+
+from sklearn.ensemble import RandomForestRegressor
+
+from sklearn.preprocessing import LabelEncoder
+# Apply to all string columns
+for col in X_train.columns:
+    if X_train[col].dtype == 'object':
+        le = LabelEncoder()
+        combined = pd.concat([X_train[col], X_test[col]], axis=0).astype(str)  # fit on both train+test
+        le.fit(combined)
+        X_train[col] = le.transform(X_train[col].astype(str))
+        X_test[col] = le.transform(X_test[col].astype(str))
+
+
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+from sklearn.metrics import mean_squared_error
+
+y_pred = model.predict(X_test)
+print("RMSE:", mean_squared_error(y_test, y_pred, squared=False))
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+air_quality['date'] = pd.to_datetime(air_quality['date'], errors='coerce')
+
+sns.set_theme(style="darkgrid")
+
+state_pm25 = air_quality.groupby('state')['pm2_5'].mean().sort_values(ascending=False)
+
+plt.figure(figsize=(12,6))
+sns.barplot(x=state_pm25.index, y=state_pm25.values, palette='viridis')
+plt.xticks(rotation=90)
+plt.title('Average PM2.5 Levels by State')
+plt.ylabel('PM2.5')
+plt.xlabel('State')
+plt.show()
+
+# Drop NaT values
+filtered = air_quality.dropna(subset=['date', 'so2'])
+# Line plot
+plt.figure(figsize=(12,6))
+sns.lineplot(data=filtered, x='date', y='so2', ci=None)
+plt.title('SO2 Levels Over Time')
+plt.ylabel('SO2')
+plt.xlabel('Date')
+plt.show()
+
+plt.figure(figsize=(12,6))
+sns.boxplot(data=air_quality, x='type', y='pm2_5', palette='coolwarm')
+plt.xticks(rotation=45)
+plt.title('PM2.5 Distribution by Location Type')
+plt.ylabel('PM2.5')
+plt.xlabel('Location Type')
+plt.show()
+
+# Select numeric columns for pollution
+pollutants = air_quality[['so2', 'no2', 'rspm', 'spm', 'pm2_5']]
+# Calculate correlation matrix
+correlation_matrix = pollutants.corr()
+# Plot heatmap
+plt.figure(figsize=(8,6))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', linewidths=0.5)
+plt.title('Correlation Heatmap of Air Quality Metrics')
+plt.show()
+

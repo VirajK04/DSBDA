@@ -1,0 +1,106 @@
+Heart
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+heart_disease = pd.read_csv('heart.csv')
+
+heart_disease.head()
+
+heart_disease.isnull().sum()
+
+heart_disease = heart_disease.fillna(heart_disease.mean())
+
+heart_disease = heart_disease.drop_duplicates()
+
+subSet1 = heart_disease[['age','cp','chol','thalachh']]
+
+subSet2 = heart_disease[['exng','slp','output']]
+
+concat = pd.concat([subSet1, subSet2], axis=1)
+
+concat.head()
+
+def remove_outliers(column):
+    Q1 = column.quantile(0.25)
+    Q3 = column.quantile(0.75)
+    IQR = Q3 - Q1
+    threshold = 1.5 * IQR
+    outlier_mask = (column < Q1 - threshold) | (column > Q3 + threshold)
+    return column[~outlier_mask]
+
+# Remove outliers for each column using a loop
+col_name = ['cp','thalachh','exng','oldpeak','slp','caa']
+for col in col_name:
+    heart_disease[col] = remove_outliers(heart_disease[col])
+
+heart_disease = heart_disease.dropna()
+
+heart_disease.isna().sum()
+
+heart_disease = heart_disease.drop('fbs',axis=1)
+
+# Compute correlations between features and target
+correlations = heart_disease.corr()['output'].drop('output')
+# Print correlations
+correlations
+# Plot correlation heatmap
+plt.figure(figsize=(8, 6))
+sns.heatmap(heart_disease.corr(), annot=True, cmap='coolwarm')
+plt.title('Correlation Heatmap')
+plt.show()
+
+from sklearn.model_selection import train_test_split
+
+# splitting data using train test split
+x = heart_disease[['cp','thalachh','exng','oldpeak','slp','caa']]
+y = heart_disease.output
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=0)
+
+from sklearn.preprocessing import StandardScaler
+
+sc = StandardScaler()
+
+x_train_scaled = sc.fit_transform(x_train)
+x_test_scaled = sc.transform(x_test)
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+model = LogisticRegression()
+model.fit(x_train_scaled, y_train)
+# Make predictions on the test set
+y_pred = model.predict(x_test_scaled)
+# Evaluate the model's accuracy
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+
+plt.figure(figsize=(10,6))
+sns.heatmap(heart_disease.corr(),cmap = 'YlGnBu', annot = True)
+
+sns.lineplot(data=heart_disease,x=heart_disease.age,y=heart_disease.cp,hue='output')
+
+sns.lineplot(data=heart_disease,x=heart_disease.age,y=heart_disease.trtbps,hue='output')
+
+# Shows the Distribution of Heat Diseases with respect to male and female
+sns.histplot(data=heart_disease,
+x=heart_disease.output,
+hue=heart_disease.sex)
+
+heart_disease.columns
+
+temp_df = heart_disease[['age','cp', 'trtbps','chol','oldpeak','output']]
+plt.figure(figsize=(15,10))
+sns.pairplot(temp_df,hue="output")
+plt.title("Looking for Insites in Data")
+plt.legend("HeartDisease")
+plt.tight_layout()
+plt.plot()
+
+plt.figure(figsize=(15,10))
+for i,col in enumerate(temp_df.columns,1):
+    plt.subplot(4,3,i)
+    plt.title(f"Distribution of {col} Data")
+    sns.histplot(heart_disease[col],kde=True)
+    plt.tight_layout()
+    plt.plot()

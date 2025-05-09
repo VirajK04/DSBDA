@@ -1,0 +1,56 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df = pd.read_csv('dataset_Facebook.csv', sep=';')
+
+df.head()
+
+subset1 = df[['Post Month','Page total likes']]
+subset2 = df[['like','share']]
+
+subset1.head()
+
+subset2.head()
+
+merged_data = pd.merge(subset1, subset2, left_on='Post Month', right_on='like')
+
+merged_data.head()
+
+merged_data.sort_values(by='Page total likes').head()
+
+merged_data.transpose().head()
+
+df.shape
+
+reshaped = pd.melt(df, id_vars=['Type'], value_vars=['comment'])
+
+reshaped.head()
+
+# Set style
+sns.set(style='whitegrid')
+plt.figure(figsize=(10, 6))
+# Bar Plot: Average Likes vs Shares
+plt.subplot(2, 1, 2)
+interaction_means = df[['like', 'share']].mean()
+interaction_means.plot(kind='bar', color=['green', 'orange'])
+plt.title('Average Likes and Shares')
+plt.ylabel('Count')
+plt.show()
+
+# Line Plot: Avg Page Likes over Post Month
+plt.subplot(2, 1, 1)
+monthly_likes = df.groupby('Post Month')['Page total likes'].mean()
+monthly_likes.plot(kind='line', marker='o', color='blue')
+plt.title('Average Page Total Likes by Post Month')
+plt.xlabel('Post Month')
+plt.ylabel('Average Page Total Likes')
+plt.show()
+
+correlation=merged_data.corr(numeric_only=True)
+
+# Plot the heatmap
+plt.figure(figsize=(12, 8))
+sns.heatmap(correlation, annot=True, fmt=".2f", cmap='coolwarm', square=True, linewidths=0.5, cbar_kws={"shrink": 0.8})
+plt.title("Correlation Heatmap: Post Month, Page Likes, Like & Share", fontsize=16)
+plt.show()

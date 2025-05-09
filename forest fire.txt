@@ -1,0 +1,47 @@
+forest fire
+
+pip install mrjob
+
+import pandas as pd
+
+df = pd.read_csv('forestfires.csv')
+
+df.head()
+
+from mrjob.job import MRJob
+
+import sys
+sys.argv = ['avg_temperature.py', 'forestfires.csv']
+
+!pip install pyhive pandas seaborn matplotlib
+!pip install thrift thrift-sasl pyhive pandas seaborn matplotlib
+
+# Group by month and count occurrences
+monthly_count = df.groupby('month').size().reset_index(name='count')
+print(monthly_count)
+
+# Perform other aggregations or queries
+temperature_avg = df.groupby('month')['temp'].mean()
+print(temperature_avg)
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(10, 5))
+sns.boxplot(x=df['month'], y=df['temp'])
+plt.title("Temperature Variation by Month")
+plt.show()
+
+import sqlite3
+
+# Create/Connect to SQLite database
+conn = sqlite3.connect('forestfires.db')
+# Write the DataFrame to the SQLite database
+df.to_sql('forestfires', conn, if_exists='replace', index=False)
+# Optional: Check if data is loaded correctly
+cursor = conn.cursor()
+cursor.execute("SELECT * FROM forestfires LIMIT 5")
+data = cursor.fetchall()
+print(data)
+# Close the connection
+conn.close()

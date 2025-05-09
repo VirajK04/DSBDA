@@ -1,0 +1,47 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df = pd.read_csv('adult_dataset.csv')
+
+df.head()
+
+df.isnull().sum()
+
+df.describe()
+
+subset1 = df[['workclass','education','capital-gain']]
+
+subset2 = df[['race','native-country']]
+
+merged_data  = pd.concat([df_subset_1,df_subset_2],axis=1)
+merged_data
+
+merged_data.sort_values(by=['capital-gain'],ascending=True)
+
+merged_data.transpose()
+
+df.shape
+
+pd.melt(df, id_vars =['education'], value_vars =['capital-gain'])
+
+correlation=df.corr(numeric_only=True)
+
+plt.figure(figsize=(10, 6))
+sns.heatmap(correlation, annot=True, fmt=".2f", cmap='coolwarm', square=True, linewidths=0.5, cbar_kws={"shrink": 0.8})
+plt.title("Correlation Heatmap of Selected Features", fontsize=16)
+plt.tight_layout()
+plt.show()
+
+df.columns
+
+age_gender_gain = df.groupby(['age', 'gender'])['capital-gain'].mean().reset_index()
+
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=age_gender_gain, x='age', y='capital-gain', hue='gender')
+plt.title('Average Capital Gain by Age and Gender')
+plt.xlabel('Age')
+plt.ylabel('Capital Gain')
+plt.tight_layout()
+plt.show()
+
